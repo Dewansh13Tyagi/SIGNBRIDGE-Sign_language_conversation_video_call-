@@ -108,8 +108,8 @@ Frontend dev URL:
 
 ```env
 VITE_SIGN_API_URL=http://127.0.0.1:8000
-VITE_ZEGO_APP_ID=your_zego_app_id
-VITE_ZEGO_SERVER_SECRET=your_zego_server_secret
+VITE_ZEGO_APP_ID=2144521217
+VITE_ZEGO_SERVER_SECRET=c3034ecb6bf976d146f3386c1b78d786
 ```
 
 ### Backend: Render or local env
@@ -221,8 +221,8 @@ lang_video_call
 
 ```env
 VITE_SIGN_API_URL=https://your-api-name.onrender.com
-VITE_ZEGO_APP_ID=your_zego_app_id
-VITE_ZEGO_SERVER_SECRET=your_zego_server_secret
+VITE_ZEGO_APP_ID=your_2144521217
+VITE_ZEGO_SERVER_SECRET=c3034ecb6bf976d146f3386c1b78d786
 ```
 
 5. Deploy.
