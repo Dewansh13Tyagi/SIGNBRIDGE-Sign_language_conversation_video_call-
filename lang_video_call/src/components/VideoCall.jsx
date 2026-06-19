@@ -1,7 +1,23 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+import { ZIM } from "zego-zim-web";
 
 const SIGNBRIDGE_CMD = "signbridge.v1";
+
+function buildCaptionPayload(text, label, confidence, fromUserName, sendSeqRef) {
+  const clippedTranscript = String(text ?? "").slice(-180);
+  const token = String(label ?? "").trim();
+  return {
+    v: 1,
+    type: SIGNBRIDGE_CMD,
+    transcript: clippedTranscript || token,
+    token,
+    label: token,
+    confidence: confidence ?? 0,
+    fromUserName: fromUserName || "Guest",
+    seq: (sendSeqRef.current += 1),
+  };
+}
 
 const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
   const containerRef = useRef(null);
@@ -10,6 +26,10 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
   const onRemoteCaptionRef = useRef(onRemoteCaption);
   const userNameRef = useRef(userName || "Guest");
   const sendSeqRef = useRef(0);
+  const roomJoinedRef = useRef(false);
+  const remoteUserIdsRef = useRef(new Set());
+  const pendingCaptionsRef = useRef([]);
+  const deliverCaptionRef = useRef(null);
 
   useEffect(() => {
     onRemoteCaptionRef.current = onRemoteCaption;
@@ -21,32 +41,21 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
 
   useImperativeHandle(ref, () => ({
     sendTranscript: (text, label, confidence) => {
-      const zp = zegoRef.current;
-      if (!zp) {
+      const payload = buildCaptionPayload(
+        text,
+        label,
+        confidence,
+        userNameRef.current,
+        sendSeqRef,
+      );
+      if (!payload.token && !payload.transcript) {
         return;
       }
-      // Keep payload tiny so it always fits signaling limits.
-      const clippedTranscript = String(text ?? "").slice(-180);
-      const token = String(label ?? "").trim();
-      const payload = {
-        v: 1,
-        type: SIGNBRIDGE_CMD,
-        transcript: clippedTranscript,
-        token,
-        label: token,
-        confidence: confidence ?? 0,
-        fromUserName: userNameRef.current || "Guest",
-        seq: (sendSeqRef.current += 1),
-      };
-      // Prefer custom command broadcast (more reliable than sendInRoomCommand([], ...)).
-      if (typeof zp.sendInRoomCustomCommand === "function") {
-        void zp.sendInRoomCustomCommand(payload);
+      if (!roomJoinedRef.current || !deliverCaptionRef.current) {
+        pendingCaptionsRef.current.push(payload);
         return;
       }
-      if (typeof zp.sendInRoomCommand === "function") {
-        // Some SDK builds treat [] as "send to nobody"; try undefined broadcast.
-        void zp.sendInRoomCommand(JSON.stringify(payload), undefined);
-      }
+      deliverCaptionRef.current(payload);
     },
   }));
 
@@ -60,7 +69,11 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
       return undefined;
     }
 
-    const userID = Date.now().toString();
+    roomJoinedRef.current = false;
+    remoteUserIdsRef.current = new Set();
+    pendingCaptionsRef.current = [];
+
+    const userID = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     localUserIdRef.current = userID;
     const finalUserName = userName || "Guest";
 
@@ -73,14 +86,23 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
     );
 
     const zp = ZegoUIKitPrebuilt.create(kitToken);
+    zegoRef.current = zp;
+
+    try {
+      zp.addPlugins({ ZIM });
+    } catch (pluginError) {
+      console.warn("ZIM plugin registration failed:", pluginError);
+    }
 
     const emitRemoteCaption = (fromUser, payload) => {
-      if (!fromUser || fromUser.userID === localUserIdRef.current) {
+      const senderId = fromUser?.userID || fromUser?.userId;
+      if (!senderId || senderId === localUserIdRef.current) {
         return;
       }
-      if (payload?.type !== SIGNBRIDGE_CMD) {
+      if (!payload || payload.type !== SIGNBRIDGE_CMD) {
         return;
       }
+
       const transcript =
         payload.transcript != null
           ? String(payload.transcript)
@@ -89,15 +111,52 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
             : payload.label != null
               ? String(payload.label)
               : "";
-      if (!transcript) return;
+      if (!transcript.trim()) {
+        return;
+      }
+
       onRemoteCaptionRef.current?.({
-        fromUserId: fromUser.userID,
-        fromUserName: fromUser.userName || payload.fromUserName || "Guest",
+        fromUserId: senderId,
+        fromUserName: fromUser?.userName || payload.fromUserName || "Guest",
         transcript,
         label: payload.label != null ? String(payload.label) : "",
         confidence: typeof payload.confidence === "number" ? payload.confidence : 0,
         at: Date.now(),
       });
+    };
+
+    deliverCaptionRef.current = (payload) => {
+      const instance = zegoRef.current;
+      if (!instance) {
+        return;
+      }
+
+      const jsonPayload = JSON.stringify(payload);
+      const remoteIds = Array.from(remoteUserIdsRef.current).filter(
+        (id) => id && id !== localUserIdRef.current,
+      );
+
+      if (typeof instance.sendInRoomCustomCommand === "function") {
+        void instance
+          .sendInRoomCustomCommand(payload)
+          .catch((error) => console.warn("sendInRoomCustomCommand failed:", error));
+      }
+
+      if (typeof instance.sendInRoomCommand === "function" && remoteIds.length) {
+        void instance
+          .sendInRoomCommand(jsonPayload, remoteIds)
+          .catch((error) => console.warn("sendInRoomCommand failed:", error));
+      }
+    };
+
+    const flushPendingCaptions = () => {
+      if (!roomJoinedRef.current || !deliverCaptionRef.current) {
+        return;
+      }
+      const queue = pendingCaptionsRef.current.splice(0);
+      for (const payload of queue) {
+        deliverCaptionRef.current(payload);
+      }
     };
 
     zp.joinRoom({
@@ -112,10 +171,30 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
       layout: "Grid",
       turnOnCameraWhenJoining: true,
       turnOnMicrophoneWhenJoining: true,
+      sendMessageChannel: "ZIM",
+      onJoinRoom: () => {
+        roomJoinedRef.current = true;
+        flushPendingCaptions();
+      },
+      onUserJoin: (users) => {
+        for (const user of users || []) {
+          if (user?.userID && user.userID !== localUserIdRef.current) {
+            remoteUserIdsRef.current.add(user.userID);
+          }
+        }
+      },
+      onUserLeave: (users) => {
+        for (const user of users || []) {
+          if (user?.userID) {
+            remoteUserIdsRef.current.delete(user.userID);
+          }
+        }
+      },
       onInRoomCustomCommandReceived: (commands) => {
-        if (!Array.isArray(commands) || !commands.length) return;
+        if (!Array.isArray(commands) || !commands.length) {
+          return;
+        }
         for (const cmd of commands) {
-          // Zego's custom command structure varies slightly across versions.
           const payload = cmd?.command;
           const fromUser = cmd?.fromUser || {
             userID: cmd?.senderUserID,
@@ -134,14 +213,18 @@ const VideoCall = forwardRef(({ roomID, userName, onRemoteCaption }, ref) => {
       },
     });
 
-    zegoRef.current = zp;
-
     return () => {
+      roomJoinedRef.current = false;
+      deliverCaptionRef.current = null;
+      remoteUserIdsRef.current = new Set();
+      pendingCaptionsRef.current = [];
       try {
         zp.destroy();
       } catch (err) {
         console.warn("Zego destroy failed:", err);
-        if (containerElement) containerElement.innerHTML = "";
+        if (containerElement) {
+          containerElement.innerHTML = "";
+        }
       }
       zegoRef.current = null;
     };

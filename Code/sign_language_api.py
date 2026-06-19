@@ -40,6 +40,14 @@ def _cors_origin_regex() -> str | None:
     return r"https://.*\.vercel\.app"
 
 
+def _use_strict_cors() -> bool:
+    return os.getenv("SIGN_API_STRICT_CORS", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
 interpreter = SignLanguageInterpreter(min_confidence=WEB_MIN_CONFIDENCE)
 sessions: dict[str, LiveRecognitionSession] = {}
 
@@ -56,15 +64,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_cors_regex = _cors_origin_regex()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_allowed_origins(),
-    allow_origin_regex=_cors_regex,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if _use_strict_cors():
+    _cors_regex = _cors_origin_regex()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_allowed_origins(),
+        allow_origin_regex=_cors_regex,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 class FrameRequest(BaseModel):

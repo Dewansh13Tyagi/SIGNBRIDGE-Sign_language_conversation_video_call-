@@ -46,7 +46,20 @@ export default function Room() {
   }, [navigate, roomId, providedName]);
 
   const handleRemoteCaption = useCallback((payload) => {
-    setRemoteCaption(payload);
+    setRemoteCaption((prev) => {
+      if (!prev || prev.fromUserId !== payload.fromUserId) {
+        return payload;
+      }
+      const prevText = String(prev.transcript || "");
+      const nextText = String(payload.transcript || "");
+      const merged =
+        nextText.length >= prevText.length ? nextText : `${prevText} ${payload.label}`.trim();
+      return {
+        ...prev,
+        ...payload,
+        transcript: merged,
+      };
+    });
   }, []);
 
   const handleCommittedCaption = useCallback((fullTranscript, word, confidence) => {
@@ -64,6 +77,12 @@ export default function Room() {
     (interpreterState.isRunning
       ? "Hold one sign clearly for a moment and the live transcript will appear here."
       : "Start the interpreter to show live sign-to-text captions during the call.");
+
+  const showLocalTranscript = !remoteCaption || interpreterState.isRunning || interpreterState.transcript;
+
+  const localTranscriptText = remoteCaption && !interpreterState.isRunning && !interpreterState.transcript
+    ? "Remote captions appear above. Start captions to sign in this room."
+    : transcriptText;
 
   return (
     <div className="room-shell">
@@ -145,7 +164,9 @@ export default function Room() {
           </div>
         ) : null}
 
-        <p className="caption-dock__text">{transcriptText}</p>
+        {showLocalTranscript ? (
+          <p className="caption-dock__text">{localTranscriptText}</p>
+        ) : null}
       </div>
     </div>
   );
