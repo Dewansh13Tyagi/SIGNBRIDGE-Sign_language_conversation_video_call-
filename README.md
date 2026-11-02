@@ -1,39 +1,68 @@
-# SignBridge: Sign Language Conversation Video Call
+# SignBridge – AI-Powered Sign Language Conversation & Video Calling
 
-SignBridge combines a React video-call interface with a Python sign-language interpreter. It is designed as a demo-friendly accessibility project: join a call, run live sign recognition, show real-time captions, and optionally speak the transcript back with a more natural browser voice.
+**Breaking communication barriers through AI-powered sign language recognition and real-time video communication.**
 
-## What this project includes
+SignBridge is an accessibility-focused application that combines a React-based video calling interface with a Python-powered sign language recognition system. It enables users to communicate through video calls, recognize sign language gestures in real time, display recognized words as live captions, and convert transcripts into speech.
 
-- `Code/`
-  - FastAPI backend for sign recognition
-  - trained word-level gesture model
-  - webcam testing script
-  - training pipeline for the provided gesture dataset
-- `lang_video_call/`
-  - React + Vite video-call UI
-  - live caption panel
-  - transcript speech button
-  - deployment-ready Vercel config
+The project integrates computer vision, deep learning, real-time communication, and web technologies to make digital communication more inclusive for people with hearing and speech impairments.
 
-## Current model scope
+## Key Features
 
-The current model is trained on the provided gesture vocabulary:
+- **Real-Time Sign Language Recognition:** Detects and interprets hand gestures using MediaPipe and a trained deep learning model.
+- **Video Calling:** Provides a React-based video conferencing interface.
+- **Live Captions:** Displays recognized sign language words as real-time text.
+- **Text-to-Speech:** Converts recognized transcripts into spoken language using browser-supported speech synthesis.
+- **Deep Learning Model:** Uses a GRU-based sequence classification architecture with attention.
+- **Webcam Testing:** Allows independent testing of sign recognition through a webcam.
+- **REST API Integration:** Connects the React frontend with the Python FastAPI backend.
+- **Cloud Deployment:** Supports frontend deployment on Vercel and backend deployment on Render.
 
-- `46` word classes
-- `410` total gesture videos
-- word-level recognition, not alphabet-by-alphabet spelling
+## Technology Stack
 
-The latest training pipeline uses:
+| Category | Technologies |
+|---|---|
+| Frontend | React.js, Vite, JavaScript |
+| Backend | Python, FastAPI |
+| Machine Learning | TensorFlow, Keras |
+| Computer Vision | OpenCV, MediaPipe |
+| Deep Learning | GRU, Attention Mechanism |
+| Communication | ZEGO Video Call SDK |
+| API | REST APIs |
+| Deployment | Vercel, Render, Docker |
+| Version Control | Git, GitHub |
 
-- MediaPipe hand landmarks
-- motion-aware sequence features
-- data augmentation for small datasets
-- GRU + attention sequence classification
+## Model Overview
 
-## Repository structure
+SignBridge uses a word-level sign language recognition model trained on a custom gesture video dataset.
+
+**Current Model Specifications:**
+
+- 46 word classes
+- 410 gesture videos
+- Word-level gesture recognition
+- MediaPipe hand landmark extraction
+- Motion-aware sequence feature processing
+- Data augmentation for improved generalization
+- GRU-based sequence classification with an attention mechanism
+
+**Model Workflow:**
+
+1. Capture video frames through the webcam.
+2. Extract hand landmarks using MediaPipe.
+3. Process and normalize landmark sequences.
+4. Extract motion-aware features.
+5. Pass the sequence into the trained GRU + Attention model.
+6. Predict the corresponding sign language word.
+7. Display the recognized word as a caption.
+8. Optionally convert the transcript into speech.
+
+**Note:** The current model recognizes gestures from its trained vocabulary. It does not provide unrestricted sign language translation or alphabet-by-alphabet spelling.
+
+## Project Architecture
 
 ```text
-Sign_language_conversation_video_call/
+SIGNBRIDGE/
+│
 ├── Code/
 │   ├── sign_language_api.py
 │   ├── sign_language_core.py
@@ -44,221 +73,320 @@ Sign_language_conversation_video_call/
 │   ├── word_dataset.py
 │   ├── sign_language_word_model.keras
 │   └── requirements.txt
+│
 ├── lang_video_call/
 │   ├── src/
 │   ├── public/
 │   ├── package.json
 │   ├── vercel.json
 │   └── .env.example
-└── render.yaml
+│
+├── render.yaml
+└── README.md
 ```
 
-## Architecture
+## Installation and Local Setup
 
-```mermaid
-flowchart LR
-  A["User Camera"] --> B["React Frontend (Vercel)"]
-  B --> C["FastAPI Sign API (Render)"]
-  C --> D["Trained Gesture Model"]
-  C --> E["Transcript / Predictions"]
-  E --> B
-  B --> F["ZEGO Video Call UI"]
+### Prerequisites
+
+Make sure you have installed:
+
+- Python 3.10 or a compatible version supported by the dependencies
+- Node.js and npm
+- Git
+- VS Code (recommended)
+- A working webcam
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Dewansh13Tyagi/SIGNBRIDGE-Sign_language_conversation_video_call-.git
+
+cd SIGNBRIDGE-Sign_language_conversation_video_call-
 ```
 
-## Local setup
+### 2. Set Up the Python Backend
 
-### 1. Clone the repository
+Navigate to the backend directory:
 
-```powershell
-git clone https://github.com/everthingisnotfound/Sign_language_conversation_video_call.git
-cd Sign_language_conversation_video_call
-```
-
-### 2. Run the Python backend
-
-```powershell
+```bash
 cd Code
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe sign_language_api.py
 ```
 
-Backend health check:
+Create a virtual environment:
 
-- [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
+```bash
+python -m venv .venv
+```
 
-### 3. Run the React frontend
+Activate it on Windows:
 
-Create `lang_video_call/.env` from `lang_video_call/.env.example`.
+```bash
+.venv\Scripts\activate
+```
 
-```powershell
-cd ..\lang_video_call
+Upgrade pip and install dependencies:
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Start the FastAPI backend:
+
+```bash
+python sign_language_api.py
+```
+
+Backend URL:
+
+```text
+http://127.0.0.1:8000
+```
+
+Health Check:
+
+```text
+http://127.0.0.1:8000/api/health
+```
+
+### 3. Set Up the React Frontend
+
+Open another terminal and navigate to the frontend directory:
+
+```bash
+cd lang_video_call
+```
+
+Create your environment file using the example:
+
+```bash
+copy .env.example .env
+```
+
+Install the frontend dependencies:
+
+```bash
 npm install
+```
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Frontend dev URL:
+Frontend URL:
 
-- [http://127.0.0.1:5173](http://127.0.0.1:5173)
+```text
+http://localhost:5173
+```
 
-## Environment variables
+## Environment Variables
 
-### Frontend: `lang_video_call/.env`
+### Frontend Configuration
+
+Create `lang_video_call/.env`:
 
 ```env
 VITE_SIGN_API_URL=http://127.0.0.1:8000
-VITE_ZEGO_APP_ID=2144521217
-VITE_ZEGO_SERVER_SECRET=c3034ecb6bf976d146f3386c1b78d786
+VITE_ZEGO_APP_ID=YOUR_ZEGO_APP_ID
 ```
 
-### Backend: Render or local env
+Do not expose your ZEGO Server Secret through a `VITE_` environment variable. Vite exposes variables with this prefix to browser code.
+
+For production, generate ZEGO authentication tokens on the backend and keep the Server Secret in private backend environment variables.
+
+### Backend Configuration
+
+Configure the backend environment:
 
 ```env
 SIGN_API_HOST=0.0.0.0
 SIGN_API_PORT=8000
-SIGN_API_ORIGINS=https://your-frontend-domain.vercel.app,http://localhost:5173
+SIGN_API_ORIGINS=http://localhost:5173
 ```
 
-## Webcam-only testing
+For deployment, add your actual Vercel domain to `SIGN_API_ORIGINS`.
 
-If you want to test recognition locally without the web app:
+## Webcam-Only Testing
 
-```powershell
+You can test the sign language recognition model independently without starting the React application.
+
+Navigate to:
+
+```bash
 cd Code
-.\.venv\Scripts\python.exe sign_language_webcam.py
 ```
 
-Controls:
+Run:
 
-- `S` speak transcript
-- `C` clear transcript
-- `Q` quit
+```bash
+python sign_language_webcam.py
+```
 
-## Retraining the model
+**Available Controls:**
 
-If you re-add the `gestures/` dataset locally and want to retrain:
+| Key | Action |
+|---|---|
+| S | Speak the transcript |
+| C | Clear the transcript |
+| Q | Quit the application |
 
-```powershell
+## Model Training
+
+The repository includes a training pipeline for retraining the model using the gesture dataset.
+
+To retrain the model:
+
+```bash
 cd Code
-.\.venv\Scripts\python.exe final.py
+python final.py
 ```
 
-This pipeline will:
+The training pipeline performs the following operations:
 
-1. extract landmarks from gesture videos
-2. build train/test splits
-3. train the word-level model
-4. save `sign_language_word_model.keras`
+1. Extracts hand landmarks from gesture videos.
+2. Processes and prepares sequence features.
+3. Creates training and testing datasets.
+4. Applies data augmentation.
+5. Trains the GRU + Attention classification model.
+6. Evaluates the trained model.
+7. Saves the resulting model as `sign_language_word_model.keras`.
 
-## Deployment recommendation
+**Dataset Note:** The original gesture dataset is not included in the GitHub repository. You must restore the required `gestures/` dataset locally before retraining. The included trained model can be used for inference without the original training dataset.
 
-### Best choice for this project
+## Deployment Guide
 
-Use:
+SignBridge uses separate deployment platforms for the frontend and backend.
 
-- `Vercel` for the React frontend
-- `Render` for the Python FastAPI backend
+| Component | Platform |
+|---|---|
+| React Frontend | Vercel |
+| Python FastAPI Backend | Render |
+| Containerization | Docker |
 
-### Why not GitHub Pages?
+### 1. Deploy Backend on Render
 
-GitHub Pages is for static sites only, so it can host the React build output but not the Python inference API. GitHub’s docs describe Pages as a static site hosting service for HTML, CSS, and JavaScript files.
+The repository includes:
 
-### Why not host the backend on Vercel or Netlify?
+- `render.yaml`
+- `Code/Dockerfile`
+- `Code/.dockerignore`
 
-The frontend can deploy fine there, but this backend loads TensorFlow, OpenCV, and MediaPipe for word-sequence inference. In practice, a normal container-based Python service is a better fit than a serverless-style deployment for this model.
+Steps:
 
-## Deploy the backend on Render
+1. Push the repository to GitHub.
+2. Open [Render](https://render.com/).
+3. Select **New Web Service**.
+4. Connect your GitHub repository.
+5. Configure the service using the included `render.yaml` or Docker configuration.
+6. Add the backend environment variables.
+7. Deploy the application.
 
-This repository includes:
+Example backend URL:
 
-- [render.yaml](./render.yaml)
-- [Code/Dockerfile](./Code/Dockerfile)
-- [Code/.dockerignore](./Code/.dockerignore)
+```text
+https://your-api-name.onrender.com
+```
 
-### Render steps
+Verify deployment:
 
-1. Push this repo to GitHub.
-2. Open [Render](https://render.com/docs/web-services).
-3. Create a new Web Service from the GitHub repo.
-4. Choose the `render.yaml` blueprint or create the service manually.
-5. Set:
-   - service type: `Web Service`
-   - runtime: `Docker`
-6. Add env vars:
-   - `SIGN_API_HOST=0.0.0.0`
-   - `SIGN_API_PORT=8000`
-   - `SIGN_API_ORIGINS=https://your-vercel-domain.vercel.app`
-7. Deploy.
+```text
+https://your-api-name.onrender.com/api/health
+```
 
-After deployment, your backend URL will look like:
+### 2. Deploy Frontend on Vercel
 
-- `https://your-api-name.onrender.com`
+Steps:
 
-Health check:
-
-- `https://your-api-name.onrender.com/api/health`
-
-## Deploy the frontend on Vercel
-
-This repository includes:
-
-- [lang_video_call/vercel.json](./lang_video_call/vercel.json)
-
-That file ensures client-side routes like `/room/:id` work correctly on refresh.
-
-### Vercel steps
-
-1. Open [Vercel](https://vercel.com/docs/frameworks/frontend/vite).
-2. Import this GitHub repository.
-3. Set the project root directory to:
+1. Open [Vercel](https://vercel.com/).
+2. Import your GitHub repository.
+3. Set the Root Directory to:
 
 ```text
 lang_video_call
 ```
 
-4. Add environment variables in Vercel:
+4. Configure the required environment variables:
 
 ```env
 VITE_SIGN_API_URL=https://your-api-name.onrender.com
-VITE_ZEGO_APP_ID=your_2144521217
-VITE_ZEGO_SERVER_SECRET=c3034ecb6bf976d146f3386c1b78d786
+VITE_ZEGO_APP_ID=YOUR_ZEGO_APP_ID
 ```
 
-5. Deploy.
+5. Configure the ZEGO token integration securely through the backend.
+6. Click **Deploy**.
 
-Your frontend URL will look like:
+Example frontend URL:
 
-- `https://your-project-name.vercel.app`
+```text
+https://your-project-name.vercel.app
+```
 
-## Important production note
+The included `vercel.json` handles client-side routing for paths such as `/room/:id`.
 
-The current frontend uses `VITE_ZEGO_SERVER_SECRET`, which means the ZEGO secret is exposed to the browser at build time. This is acceptable for a demo or personal project, but not ideal for a production-grade app.
+## Deployment Checklist
 
-For a safer production setup, move token generation to the backend and keep the ZEGO server secret server-side only.
+Before sharing the application publicly, verify:
 
-## Demo deployment checklist
+- [ ] Python backend is deployed successfully.
+- [ ] Backend health endpoint responds correctly.
+- [ ] React frontend is deployed on Vercel.
+- [ ] Frontend API URL points to the deployed backend.
+- [ ] CORS settings include the frontend domain.
+- [ ] ZEGO application credentials are configured securely.
+- [ ] Camera and microphone permissions are enabled.
+- [ ] Video calling works across different devices.
+- [ ] Live sign recognition and captions work correctly.
+- [ ] Text-to-speech functionality works.
 
-Before sharing the app across devices:
+## Limitations and Future Improvements
 
-- backend deployed and `/api/health` works
-- frontend deployed on Vercel
-- `VITE_SIGN_API_URL` points to the Render backend
-- `SIGN_API_ORIGINS` includes the Vercel frontend domain
-- ZEGO env vars configured
-- browser camera permissions allowed
+Although SignBridge provides a working demonstration of AI-powered sign language communication, several improvements can make it more reliable and scalable.
 
-## Notes and limitations
+**Current Limitations:**
 
-- The model is much better than the original baseline, but still limited by dataset size.
-- The dataset itself is not stored in GitHub in this repo.
-- The included model files are enough for inference without retraining.
-- Webcam recognition and web recognition share the same trained model.
-- Speech on the website uses the device browser’s available voices, so voice quality depends on the device and browser.
+- Recognition is restricted to the 46 trained word classes.
+- The training dataset contains 410 gesture videos, which limits generalization.
+- Recognition accuracy can vary depending on lighting, camera quality, and hand positioning.
+- The system does not currently support unrestricted conversational sign language translation.
+- Speech quality depends on the voices available in the user's browser and device.
+
+**Future Enhancements:**
+
+- Expand the gesture vocabulary with larger and more diverse datasets.
+- Improve recognition accuracy and real-time inference performance.
+- Support continuous sentence-level sign language recognition.
+- Introduce Indian Sign Language (ISL) and American Sign Language (ASL) datasets.
+- Add multilingual text-to-speech support.
+- Optimize the model for mobile devices using TensorFlow Lite.
+- Implement secure server-side authentication and token generation.
+- Improve accessibility through enhanced UI and user experience.
+
+## Why This Project?
+
+SignBridge explores how Artificial Intelligence, Deep Learning, Computer Vision, and Real-Time Communication can work together to address accessibility challenges.
+
+By combining gesture recognition with video communication, live captions, and speech synthesis, the project aims to make digital interactions more inclusive and accessible.
 
 ## References
 
-- GitHub Pages overview: [GitHub Docs](https://docs.github.com/articles/using-a-static-site-generator-other-than-jekyll)
-- Vite on Vercel: [Vercel Docs](https://vercel.com/docs/frameworks/frontend/vite)
-- Docker on Render: [Render Docs](https://render.com/docs/docker)
-- Render Web Services: [Render Docs](https://render.com/docs/web-services)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vite.dev/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [TensorFlow Documentation](https://www.tensorflow.org/)
+- [MediaPipe Documentation](https://ai.google.dev/edge/mediapipe/solutions/guide)
+- [OpenCV Documentation](https://docs.opencv.org/)
+- [Vercel Documentation](https://vercel.com/docs)
+- [Render Documentation](https://render.com/docs)
+
+---
+
+**Project:** SignBridge – Sign Language Conversation & Video Call
+
+**Repository:** [GitHub – SIGNBRIDGE](https://github.com/Dewansh13Tyagi/SIGNBRIDGE-Sign_language_conversation_video_call-)
+
+**Built with:** React, Python, FastAPI, TensorFlow, MediaPipe, and Deep Learning.
+
+*An AI-powered step toward more inclusive communication.*
